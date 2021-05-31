@@ -18,7 +18,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
 
   await provider.update();
 
-  const openPositions = await provider.getPositions();
+  let openPositions = await provider.getPositions();
   const orders = [];
 
   for (const pair of provider.pairs) {
@@ -34,7 +34,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
 
       pair.nextCheck = t;
     } else if (date.getTime() >= pair.nextCheck) {
-      const positions = openPositions.filter(position => position.pair === pair);
+      const positions = openPositions.filter(position => position.pair === pair && !position.closed);
 
       const signal = await script.scan(provider, pair, positions, openPositions);
 
@@ -73,7 +73,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
           for (const position of positions) {
             if (position.direction === signal.direction) continue;
 
-            if (position.filled) {
+            if (position.filled && !position.closed) {
               Logger.log(`Closing position because opposing signal found`);
               await provider.closePosition(position);
             } else {
@@ -104,8 +104,12 @@ export async function updateStrategy (provider: Provider, script: Script, settin
     }
   }
 
+  openPositions = openPositions.filter(p => !p.closed);
+
   if (orders.length > 0) {
     orders.sort((a, b) => b.riskReward - a.riskReward);
+
+    let positionCount = openPositions.length;
     
     for (const order of orders) {
       let {pair, signal, amount, portfolioSize} = order;
@@ -121,9 +125,17 @@ export async function updateStrategy (provider: Provider, script: Script, settin
         cost = settings.maxCost * portfolio;
       }
 
-      if (balance - cost >= portfolioSize * settings.minBalance) {
+      while (positionCount >= settings.maxPositions && openPositions.length > 0) {
+        const sorted = [...openPositions].sort((a, b) => (a.profits || 0) - (b.profits || 0));
+        await provider.closePosition(sorted[0]);
+        openPositions.splice(openPositions.indexOf(sorted[0]), 1);
+        positionCount--;
+      }
+
+      if (balance - cost >= portfolioSize * settings.minBalance && positionCount < settings.maxPositions) {
         try {
           await provider.order(pair, signal.direction, signal.limit, signal.stop, amount, signal);
+          positionCount++;
         } catch (e) {
           Logger.log(e.toString());
         }
@@ -132,6 +144,8 @@ export async function updateStrategy (provider: Provider, script: Script, settin
       }
     }
   }
+
+  openPositions = openPositions.filter(p => !p.closed);
 
   for (const position of openPositions) {
     if (

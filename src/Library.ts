@@ -27,22 +27,22 @@ export const Library = {
 
     return total / length;
   },
-  lowest: (candles: Candles, length: number, offset: number = 0): number => {
-    let low = candles.get(candles.length - length - offset).low;
+  lowest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'low', offset: number = 0): number => {
+    let low = candles.get(candles.length - length - offset)[source];
 
     for (let i = candles.length - length - offset + 1; i < candles.length - offset; i++) {
       const candle = candles.get(i);
-      if (candle.low < low) low = candle.low;
+      if (candle[source] < low) low = candle[source];
     }
 
     return low;
   },
-  highest: (candles: Candles, length: number, offset: number = 0): number => {
-    let high = candles.get(candles.length - length - offset).high;
+  highest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'high', offset: number = 0): number => {
+    let high = candles.get(candles.length - length - offset)[source];
 
     for (let i = candles.length - length - offset + 1; i < candles.length - offset; i++) {
       const candle = candles.get(i);
-      if (candle.high > high) high = candle.high;
+      if (candle[source] > high) high = candle[source];
     }
 
     return high;

@@ -7,5 +7,6 @@ export interface Settings {
   minBalance: number;
   maxCandlesToBuy: number;
   fixedProfit: number;
+  maxPositions: number;
   directions: string[];
 }
