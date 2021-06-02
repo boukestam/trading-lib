@@ -7,4 +7,5 @@ export declare const Library: {
     highest: (candles: Candles, length: number, source?: 'low' | 'high' | 'close' | 'open', offset?: number) => number;
     adx: (candles: Candles, length: number, offset?: number) => number;
     roc: (candles: Candles, length: number, offset?: number) => number;
+    macd: (candles: Candles, offset?: number) => number;
 };

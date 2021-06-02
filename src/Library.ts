@@ -11,7 +11,14 @@ export const Library = {
     return total / length;
   },
   ema: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'close', offset: number = 0): number => {
-    return 0;
+    const k = 2 / (length + 1);
+    let ema = candles.get(Math.max(candles.length - offset - length, 0))[source];
+
+    for (let i = candles.length - offset - length + 1; i >= 0 && i < candles.length; i++) {
+      ema = (candles.get(i)[source] * k) + (ema * (1 - k));
+    }
+
+    return ema;
   },
   atr: (candles: Candles, length: number, offset: number = 0): number => {
     let total = 0;
@@ -30,7 +37,7 @@ export const Library = {
   lowest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'low', offset: number = 0): number => {
     let low = candles.get(candles.length - length - offset)[source];
 
-    for (let i = candles.length - length - offset + 1; i < candles.length - offset; i++) {
+    for (let i = candles.length - length - offset + 1; i >= 0 && i < candles.length - offset; i++) {
       const candle = candles.get(i);
       if (candle[source] < low) low = candle[source];
     }
@@ -38,9 +45,9 @@ export const Library = {
     return low;
   },
   highest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'high', offset: number = 0): number => {
-    let high = candles.get(candles.length - length - offset)[source];
+    let high = candles.get(Math.max(candles.length - length - offset, 0))[source];
 
-    for (let i = candles.length - length - offset + 1; i < candles.length - offset; i++) {
+    for (let i = candles.length - length - offset + 1; i >= 0 && i < candles.length - offset; i++) {
       const candle = candles.get(i);
       if (candle[source] > high) high = candle[source];
     }
@@ -63,9 +70,12 @@ export const Library = {
     return 0;
   },
   roc: (candles: Candles, length: number, offset: number = 0): number => {
-    const current = candles.get(candles.length - 1 - offset).close;
-    const previous = candles.get(candles.length - 1 - offset - length).close;
+    const current = candles.get(Math.max(candles.length - 1 - offset, 0)).close;
+    const previous = candles.get(Math.max(candles.length - 1 - offset - length, 0)).close;
 
     return ((current - previous) / previous) * 100;
+  },
+  macd: (candles: Candles, offset: number = 0): number => {
+    return Library.ema(candles, 12, 'close', offset) - Library.ema(candles, 26, 'close', offset);
   }
 }
