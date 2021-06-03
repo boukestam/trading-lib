@@ -75,7 +75,16 @@ export const Library = {
 
     return ((current - previous) / previous) * 100;
   },
-  macd: (candles: Candles, offset: number = 0): number => {
-    return Library.ema(candles, 12, 'close', offset) - Library.ema(candles, 26, 'close', offset);
+  macd: (candles: Candles, smoothing: number = 9, offset: number = 0): number => {
+    const macd = (i: number) => Library.ema(candles, 12, 'close', i + offset) - Library.ema(candles, 26, 'close', i + offset);
+
+    const k = 2 / (smoothing + 1);
+    let ema = macd(smoothing - 1);
+
+    for (let i = smoothing - 2; i >= 0; i--) {
+      ema = (macd(i) * k) + (ema * (1 - k));
+    }
+
+    return ema;
   }
 }
