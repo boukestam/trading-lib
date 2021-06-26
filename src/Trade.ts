@@ -18,7 +18,6 @@ export interface Trade {
   sellDate?: Date;
   profits?: number;
   leverage?: number;
-  stopOrders?: { orderId: number; amount: number; limit: number }[],
-  signal?: any;
-  note?: string;
+  stopOrders?: { orderId: number; amount: number; limit: number }[];
+  meta: { [key: string]: any };
 }

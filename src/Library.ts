@@ -39,7 +39,7 @@ export const Library = {
 
     return total / count;
   },
-  lowest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'low', offset: number = 0): number => {
+  lowest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'low', offset: number = 1): number => {
     let low = candles.get(candles.length - length - offset)[source];
 
     for (let i = 1; i < length; i++) {
@@ -49,7 +49,7 @@ export const Library = {
 
     return low;
   },
-  highest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'high', offset: number = 0): number => {
+  highest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'high', offset: number = 1): number => {
     let high = candles.get(Math.max(candles.length - length - offset, 0))[source];
 
     for (let i = 1; i < length; i++) {
@@ -110,5 +110,27 @@ export const Library = {
     }
 
     return ema;
+  },
+  cci: (candles: Candles, length: number, offset: number = 0): number => {
+    let movingAverage = 0;
+    let typicalPrice = 0;
+
+    for (let i = candles.length - length - offset; i < candles.length - offset; i++) {
+      const candle = candles.get(i);
+
+      typicalPrice = (candle.high + candle.low + candle.close) / 3;
+      movingAverage += typicalPrice / length;
+    }
+
+    let meanDeviation = 0;
+
+    for (let i = candles.length - length - offset; i < candles.length - offset; i++) {
+      const candle = candles.get(i);
+
+      typicalPrice = (candle.high + candle.low + candle.close) / 3;
+      meanDeviation += Math.abs(typicalPrice - movingAverage) / length;
+    }
+
+    return (typicalPrice - movingAverage) / (0.015 * meanDeviation);
   }
 }

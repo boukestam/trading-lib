@@ -7,6 +7,8 @@ export interface Candles {
 
   get(index: number): OHLC;
 
+  getOffset(offset: number): OHLC;
+
   getIndexOfTime(time: number): number;
 
   minMax(): number[];

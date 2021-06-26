@@ -12,9 +12,16 @@ export interface Script {
     min: number;
     max: number;
     step: number;
+    values: string[];
   }>;
-  scan: (provider: Provider, pair: Pair, positions: Trade[], allPositions: Trade[]) => Promise<Signal | undefined>;
+  scan: (provider: Provider, pair: Pair, positions: Trade[], strategy: {
+    positions: Trade[];
+    equity: number;
+    balance: number;
+    time: Date;
+  }) => Promise<Signal | undefined>;
   update: (provider: Provider, position: Trade, price: number) => Promise<void>;
+  plot: (provider: Provider, pair: Pair, plot: (value: number, type: 'line' | 'bar') => void) => Promise<void>;
 }
 
 export const compileScript = function (scriptCode: string): Script {
@@ -25,10 +32,18 @@ export const compileScript = function (scriptCode: string): Script {
   const script: Script = {
     options: {},
     optimize: {},
-    scan: async (provider: Provider, pair: Pair, positions: Trade[], allPositions: Trade[]): Promise<Signal | undefined> => {
+    scan: async (provider: Provider, pair: Pair, positions: Trade[], strategy: {
+      positions: Trade[];
+      equity: number;
+      balance: number;
+      time: Date;
+    }): Promise<Signal | undefined> => {
       return;
     },
     update: async (provider: Provider, position: Trade, price: number) => {
+      return;
+    },
+    plot: async (provider: Provider, pair: Pair, plot: (value: number, type: 'line' | 'bar') => void) => {
       return;
     }
   }; 

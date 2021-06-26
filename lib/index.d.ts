@@ -10,4 +10,5 @@ import { SR } from './SR';
 import { updateStrategy } from './Strategy';
 import { Trade } from './Trade';
 import { Util } from './Util';
-export { Candles, CandleResult, compileScript, Library, Logger, OHLC, Pair, Provider, Script, Settings, SR, updateStrategy, Trade, Util };
+import { History } from './History';
+export { Candles, CandleResult, compileScript, History, Library, Logger, OHLC, Pair, Provider, Script, Settings, SR, updateStrategy, Trade, Util };

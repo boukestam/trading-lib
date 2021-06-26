@@ -9,7 +9,7 @@ export interface Signal {
   limit: number | 'market';
   stop: number;
   profit: number;
-  info?: any;
+  meta: { [key: string]: any };
 }
 
 export async function updateStrategy (provider: Provider, script: Script, settings: Settings) {
@@ -36,7 +36,19 @@ export async function updateStrategy (provider: Provider, script: Script, settin
     } else if (date.getTime() >= pair.nextCheck) {
       const positions = openPositions.filter(position => position.pair === pair && !position.closed);
 
-      const signal = await script.scan(provider, pair, positions, openPositions);
+      let signal: Signal | undefined;
+      
+      try {
+        signal = await script.scan(provider, pair, positions, {
+          positions: openPositions,
+          equity: await provider.getPortfolioSize(),
+          balance: await provider.getBalance(),
+          time: date
+        });
+      } catch (e) {
+        console.error(`Error while scanning symbol ${pair.symbol} at ${date}`);
+        throw e;
+      }
 
       if (signal) {
         Logger.log(`Found new signal on ${pair.symbol}`);
@@ -59,7 +71,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
         } else if (
           openPositions.some(position => 
             position.pair === pair && 
-            position.direction === signal.direction && 
+            position.direction === signal?.direction && 
             Math.abs(Util.change(position.limit, limitPrice)) < 0.001
           )
         ) {
@@ -87,7 +99,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
             (limitPrice - signal.profit) / (signal.stop -limitPrice)
           ;
 
-          if (settings.directions.some(direction => signal.direction === direction)) {
+          if (settings.directions.some(direction => signal?.direction === direction)) {
             orders.push({
               pair, 
               signal, 
@@ -134,7 +146,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
 
       if (balance - cost >= portfolioSize * settings.minBalance && positionCount < settings.maxPositions) {
         try {
-          await provider.order(pair, signal.direction, signal.limit, signal.stop, amount, signal);
+          await provider.order(pair, signal.direction, signal.limit, signal.stop, amount, signal.meta);
           positionCount++;
         } catch (e) {
           Logger.log(e.toString());

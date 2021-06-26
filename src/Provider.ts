@@ -1,4 +1,5 @@
 import { Candles } from "./Candles";
+import { History } from "./History";
 import { Pair } from "./Pair";
 import { Trade } from "./Trade";
 
@@ -17,7 +18,7 @@ export interface Provider {
 
   updatePrices (): Promise<void>;
 
-  order (pair: Pair, direction: 'long' | 'short', limit: number | 'market', stop: number, amount: number, signal: any): Promise<void>;
+  order (pair: Pair, direction: 'long' | 'short', limit: number | 'market', stop: number, amount: number, meta: { [key: string]: any }): Promise<void>;
 
   cancelOrder (order: Trade): Promise<void>;
 
@@ -30,6 +31,8 @@ export interface Provider {
   getPortfolioSize (): Promise<number>;
 
   getPositions (): Promise<Trade[]>;
+
+  getHistory (): Promise<History[]>;
 
   moveStop (position: Trade, stop: number): Promise<void>;
 

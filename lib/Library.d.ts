@@ -10,4 +10,5 @@ export declare const Library: {
     dmi: (candles: Candles, length: number, offset?: number) => number[];
     roc: (candles: Candles, length: number, offset?: number) => number;
     macd: (candles: Candles, smoothing?: number, offset?: number) => number;
+    cci: (candles: Candles, length: number, offset?: number) => number;
 };

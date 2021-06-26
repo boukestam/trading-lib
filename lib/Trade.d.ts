@@ -22,6 +22,7 @@ export interface Trade {
         amount: number;
         limit: number;
     }[];
-    signal?: any;
-    note?: string;
+    meta: {
+        [key: string]: any;
+    };
 }

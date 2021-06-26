@@ -6,6 +6,8 @@ export interface Signal {
     limit: number | 'market';
     stop: number;
     profit: number;
-    info?: any;
+    meta: {
+        [key: string]: any;
+    };
 }
 export declare function updateStrategy(provider: Provider, script: Script, settings: Settings): Promise<void>;

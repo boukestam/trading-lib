@@ -10,11 +10,13 @@ import { SR } from './SR';
 import { updateStrategy } from './Strategy';
 import { Trade } from './Trade';
 import { Util } from './Util';
+import { History } from './History';
 
 export {
   Candles,
   CandleResult,
   compileScript,
+  History,
   Library,
   Logger,
   OHLC,
