@@ -1,6 +1,25 @@
 import { Candles } from "./Candles";
 import { OHLC } from "./OHLC";
 
+function ma (nums: number[]): number {
+  let total = 0;
+
+  for (const num of nums) total += num;
+
+  return total / nums.length;
+}
+
+function ema (nums: number[], ma: number): number {
+  const k = 2 / (nums.length + 1);
+  let ema = ma;
+
+  for (const num of nums) {
+    ema = (num * k) + (ema * (1 - k));
+  }
+
+  return ema;
+}
+
 export const Library = {
   trueRange: (current: OHLC, previous: OHLC): number => {
     return Math.max(
@@ -102,14 +121,21 @@ export const Library = {
   macd: (candles: Candles, smoothing: number = 9, offset: number = 0): number => {
     const macd = (i: number) => Library.ema(candles, 12, 'close', i + offset) - Library.ema(candles, 26, 'close', i + offset);
 
-    const k = 2 / (smoothing + 1);
-    let ema = macd(smoothing - 1);
+    const maNums = [];
 
-    for (let i = smoothing - 2; i >= 0; i--) {
-      ema = (macd(i) * k) + (ema * (1 - k));
+    for (let i = smoothing * 2 - 1; i >= smoothing; i--) {
+      maNums.push(macd(i));
     }
 
-    return ema;
+    const maValue = ma(maNums);
+
+    const emaNums = [];
+
+    for (let i = smoothing - 1; i >= 0; i--) {
+      emaNums.push(macd(i));
+    }
+
+    return ema(emaNums, maValue);
   },
   cci: (candles: Candles, length: number, offset: number = 0): number => {
     let movingAverage = 0;

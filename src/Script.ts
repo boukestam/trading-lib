@@ -57,8 +57,8 @@ export const compileScript = function (scriptCode: string): Script {
     async (provider: Provider, pair: Pair, interval: string) => {
       return await provider.getCandles(pair, interval);
     },
-    async (provider: Provider, position: Trade, note?: string) => {
-      await provider.closePosition(position, undefined, note);
+    async (provider: Provider, position: Trade, ratio: number = 1, note?: string) => {
+      await provider.closePosition(position, undefined, ratio, note);
     }, 
     Library,
     Util
