@@ -1,4 +1,4 @@
-import { Candles } from "./Candles";
+import { Cache, Candles } from "./Candles";
 import { OHLC } from "./OHLC";
 import { Util } from "./Util";
 
@@ -6,11 +6,15 @@ export class OHLCCandles implements Candles {
   candles: OHLC[];
   length: number;
   interval: string;
+  intervalTime: number;
+  cache: Cache;
 
-  constructor(candles: OHLC[], interval: string) {
+  constructor(candles: OHLC[], interval: string, cache: Cache = {}) {
     this.candles = candles;
     this.interval = interval;
+    this.intervalTime = Util.intervalToMs(interval);
     this.length = candles.length;
+    this.cache = cache;
   }
 
   forEach(callback: (candle: OHLC) => void): void {
@@ -44,7 +48,7 @@ export class OHLCCandles implements Candles {
   }
 
   range(start: number, end: number): Candles {
-    return new OHLCCandles(this.candles.slice(Math.max(start, 0), Math.max(start, end)), this.interval);
+    return new OHLCCandles(this.candles.slice(Math.max(start, 0), Math.max(start, end)), this.interval, this.cache);
   }
 
   transform(interval: string): Candles {

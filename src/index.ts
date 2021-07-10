@@ -1,4 +1,4 @@
-import { Candles } from './Candles';
+import { Candles, Cache } from './Candles';
 import { Library } from './Library';
 import { Logger } from './Logger';
 import { OHLC } from './OHLC';
@@ -15,6 +15,7 @@ import { OHLCCandles } from './OHLCCandles';
 
 export {
   Candles,
+  Cache,
   compileScript,
   History,
   Library,

@@ -1,5 +1,7 @@
 import { Candles } from "./Candles";
 import { OHLC } from "./OHLC";
+import { OHLCCandles } from "./OHLCCandles";
+import { Util } from "./Util";
 
 function ma (nums: number[]): number {
   let total = 0;
@@ -20,6 +22,41 @@ function ema (nums: number[], ma: number): number {
   return ema;
 }
 
+function cache (candles: Candles, key: string, offset: number, init: () => {
+  value: number,
+  meta: any
+}, succeed: (value: number, meta: any) => {
+  value: number,
+  meta: any
+}) {
+  let value = 0;
+  let meta = null;
+
+  const cache = candles.cache[key];
+  const cacheTime = cache?.time;
+  const time = candles.getOffset(offset).time;
+
+  if (cacheTime === time) {
+    value = candles.cache[key].value;
+  } else if (cacheTime === time - candles.intervalTime) {
+    const result = succeed(cache.value, cache.meta);
+    value = result.value;
+    meta = result.meta;
+  } else {
+    const result = init();
+    value = result.value;
+    meta = result.meta;
+  }
+
+  candles.cache[key] = {
+    time: time,
+    value: value,
+    meta: meta
+  };
+
+  return value;
+}
+
 export const Library = {
   trueRange: (current: OHLC, previous: OHLC): number => {
     return Math.max(
@@ -29,23 +66,73 @@ export const Library = {
     );
   },
   ma: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'close', offset: number = 0): number => {
-    let total = 0;
+    return cache(
+      candles, 
+      `ma-${length}-${source}-${offset}`, 
+      offset,
+      () => {
+        let total = 0;
+        const values = [];
 
-    for (let i = candles.length - length - offset; i < candles.length - offset; i++) {
-      total += candles.get(i)[source];
-    }
+        for (let i = offset; i < length + offset; i++) {
+          const value = candles.getOffset(i)[source];
 
-    return total / length;
+          total += value;
+          values.push(value);
+        }
+
+        return {
+          value: total / length,
+          meta: {
+            total: total,
+            values: values
+          }
+        };
+      },
+      (value, meta: {
+        total: number;
+        values: number[];
+      }) => {
+        const current = candles.getOffset(offset)[source];
+        const total = meta.total - meta.values[0] + current;
+
+        meta.values.shift();
+        meta.values.push(current);
+
+        return {
+          value: total / length,
+          meta: {
+            total: total,
+            values: meta.values
+          }
+        };
+      }
+    );
   },
   ema: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'close', offset: number = 0): number => {
     const k = 2 / (length + 1);
-    let ema = Library.ma(candles, length, source, length + offset);
 
-    for (let i = candles.length - offset - length; i < candles.length - offset; i++) {
-      ema = (candles.get(i)[source] * k) + (ema * (1 - k));
-    }
+    return cache(
+      candles,
+      `ema-${length}-${source}-${offset}`,
+      offset,
+      () => {
+        let ema = Library.ma(candles, length, source, candles.length - length);
 
-    return ema;
+        for (let i = length; i < candles.length - offset; i++) {
+          ema = (candles.get(i)[source] * k) + (ema * (1 - k));
+        }
+
+        return {
+          value: ema,
+          meta: null
+        };
+      },
+      (value) => ({
+        value: (candles.getOffset(offset)[source] * k) + (value * (1 - k)),
+        meta: null
+      })
+    )
   },
   atr: (candles: Candles, length: number, offset: number = 0): number => {
     let total = 0;
@@ -118,24 +205,110 @@ export const Library = {
 
     return ((current - previous) / previous) * 100;
   },
+  rsi: (candles: Candles, length: number, offset: number = 0): number => {
+    return cache(
+      candles, 
+      `rsi-${length}-${offset}`, 
+      offset,
+      () => {
+        let totalGain = 0;
+        let totalLoss = 0;
+        let prevClose = candles.get(candles.length - offset - length).close;
+
+        for (let i = candles.length - offset - length + 1; i < candles.length - offset; i++) {
+          const close = candles.get(i).close;
+          const change = Util.change(prevClose, close) * 100;
+
+          if (change > 0) {
+            totalGain += change;
+          } else {
+            totalLoss += change * -1;
+          }
+          
+          prevClose = close;
+        }
+
+        const averageGain = totalGain / length;
+        const averageLoss = totalLoss / length;
+
+        const rs = averageGain / averageLoss;
+
+        return {
+          value: 100 - (100 / (1 + rs)),
+          meta: {
+            averageGain: averageGain,
+            averageLoss: averageLoss,
+            close: prevClose
+          }
+        };
+      },
+      (value, meta: {
+        averageGain: number;
+        averageLoss: number;
+        close: number;
+      }) => {
+        const close = candles.getOffset(offset).close;
+        const change = Util.change(meta.close, close) * 100;
+
+        let currentGain = 0, currentLoss = 0;
+
+        if (change > 0) {
+          currentGain = change;
+        } else {
+          currentLoss = change * -1;
+        }
+
+        const averageGain = (meta.averageGain * 13 + currentGain) / 14;
+        const averageLoss = (meta.averageLoss * 13 + currentLoss) / 14;
+
+        const rs = averageGain / averageLoss;
+        
+        return {
+          value: 100 - (100 / (1 + rs)),
+          meta: {
+            averageGain: averageGain,
+            averageLoss: averageLoss,
+            close: close
+          }
+        };
+      }
+    );
+  },
   macd: (candles: Candles, smoothing: number = 9, offset: number = 0): number => {
     const macd = (i: number) => Library.ema(candles, 12, 'close', i + offset) - Library.ema(candles, 26, 'close', i + offset);
 
-    const maNums = [];
+    return cache(
+      candles,
+      `macd-${smoothing}-${offset}`,
+      offset,
+      () => {
+        const maNums = [];
 
-    for (let i = smoothing * 2 - 1; i >= smoothing; i--) {
-      maNums.push(macd(i));
-    }
+        for (let i = smoothing * 2 - 1; i >= smoothing; i--) {
+          maNums.push(macd(i));
+        }
 
-    const maValue = ma(maNums);
+        const maValue = ma(maNums);
 
-    const emaNums = [];
+        const emaNums = [];
 
-    for (let i = smoothing - 1; i >= 0; i--) {
-      emaNums.push(macd(i));
-    }
+        for (let i = smoothing - 1; i >= 0; i--) {
+          emaNums.push(macd(i));
+        }
 
-    return ema(emaNums, maValue);
+        return {
+          value: ema(emaNums, maValue),
+          meta: null
+        };
+      },
+      (value) => {
+        const k = 2 / (smoothing + 1);
+        return {
+          value: (macd(0) * k) + (value * (1 - k)),
+          meta: null
+        };
+      }
+    )
   },
   cci: (candles: Candles, length: number, offset: number = 0): number => {
     let movingAverage = 0;
@@ -158,5 +331,30 @@ export const Library = {
     }
 
     return (typicalPrice - movingAverage) / (0.015 * meanDeviation);
+  },
+  heikinAshi: (candles: Candles, length: number, offset: number = 0): OHLCCandles => {
+    const result: OHLC[] = [];
+
+    for (let i = candles.length - length - offset; i < candles.length - offset; i++) {
+      if (i === 0) continue;
+
+      const candle = candles.get(i);
+      const prevCandle = candles.get(i - 1);
+
+      const close = (candle.open + candle.high + candle.low + candle.low) / 4;
+      const open = (prevCandle.open + prevCandle.close) / 2;
+      const high = Math.max(candle.high, candle.open, candle.close);
+      const low = Math.min(candle.low, candle.open, candle.close);
+
+      result.push({
+        time: candle.time,
+        open,
+        high,
+        low, 
+        close
+      });
+    }
+
+    return new OHLCCandles(result, candles.interval);
   }
 }
