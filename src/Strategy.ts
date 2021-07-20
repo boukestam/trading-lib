@@ -130,7 +130,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
 
       // TODO: use available balance?
       const portfolio = await provider.getPortfolioSize();
-      const balance = await provider.getBalance();
+      const balance = await provider.getAvailableBalance();
 
       if (cost > settings.maxCost * portfolio) {
         amount = ((settings.maxCost * portfolio) * settings.leverage) / (settings.fee * settings.leverage * limitPrice + limitPrice);

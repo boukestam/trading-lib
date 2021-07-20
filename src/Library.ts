@@ -38,7 +38,7 @@ function cache (candles: Candles, key: string, offset: number, init: () => {
 
   if (cacheTime === time) {
     value = candles.cache[key].value;
-  } else if (cacheTime === time - candles.intervalTime) {
+  } else if (cacheTime === time - candles.intervalTime && cache.meta) {
     const result = succeed(cache.value, cache.meta);
     value = result.value;
     meta = result.meta;
@@ -146,7 +146,7 @@ export const Library = {
     return total / count;
   },
   lowest: (candles: Candles, length: number, source: 'low' | 'high' | 'close' | 'open' = 'low', offset: number = 1): number => {
-    let low = candles.get(candles.length - length - offset)[source];
+    let low = candles.get(Math.max(candles.length - length - offset, 0))[source];
 
     for (let i = 1; i < length; i++) {
       const candle = candles.get(Math.max(candles.length - length - offset + i, 0));
