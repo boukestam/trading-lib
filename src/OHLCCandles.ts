@@ -63,7 +63,7 @@ export class OHLCCandles implements Candles {
       const date = new Date(stick.time * 1000);
 
       if (!foundFirst) {
-        if (date.getHours() == 0 && date.getMinutes() == 0) {
+        if (date.getUTCHours() == 0 && date.getUTCMinutes() == 0) {
           foundFirst = true;
         } else {
           return;

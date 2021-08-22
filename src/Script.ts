@@ -47,19 +47,25 @@ export const compileScript = function (scriptCode: string): Script {
       return;
     }
   }; 
+
+  async function moveStop (provider: Provider, position: Trade, stop: number) {
+    await provider.moveStop(position, stop);
+  }
+
+  async function getCandles (provider: Provider, pair: Pair, interval: string) {
+    return await provider.getCandles(pair, interval);
+  }
+
+  async function closePosition (provider: Provider, position: Trade, ratio: number = 1, note?: string) {
+    await provider.closePosition(position, undefined, ratio, note);
+  }
   
   scriptSource(
     script, 
-    async (provider: Provider, position: Trade, stop: number) => {
-      await provider.moveStop(position, stop);
-    }, 
+    moveStop, 
     getSR, 
-    async (provider: Provider, pair: Pair, interval: string) => {
-      return await provider.getCandles(pair, interval);
-    },
-    async (provider: Provider, position: Trade, ratio: number = 1, note?: string) => {
-      await provider.closePosition(position, undefined, ratio, note);
-    }, 
+    getCandles,
+    closePosition, 
     Library,
     Util
   );

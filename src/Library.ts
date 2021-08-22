@@ -125,12 +125,12 @@ export const Library = {
 
         return {
           value: ema,
-          meta: null
+          meta: {}
         };
       },
       (value) => ({
         value: (candles.getOffset(offset)[source] * k) + (value * (1 - k)),
-        meta: null
+        meta: {}
       })
     )
   },
@@ -298,14 +298,14 @@ export const Library = {
 
         return {
           value: ema(emaNums, maValue),
-          meta: null
+          meta: {}
         };
       },
       (value) => {
         const k = 2 / (smoothing + 1);
         return {
           value: (macd(0) * k) + (value * (1 - k)),
-          meta: null
+          meta: {}
         };
       }
     )

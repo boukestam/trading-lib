@@ -42,7 +42,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
         signal = await script.scan(provider, pair, positions, {
           positions: openPositions,
           equity: await provider.getPortfolioSize(),
-          balance: await provider.getBalance(),
+          balance: await provider.getAvailableBalance(),
           time: date
         });
       } catch (e) {
@@ -128,7 +128,6 @@ export async function updateStrategy (provider: Provider, script: Script, settin
       const limitPrice = signal.limit === 'market' ? pair.price : signal.limit;
       let cost = ((amount * limitPrice) / settings.leverage) + (amount * limitPrice * settings.fee);
 
-      // TODO: use available balance?
       const portfolio = await provider.getPortfolioSize();
       const balance = await provider.getAvailableBalance();
 
@@ -139,7 +138,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
 
       while (positionCount >= settings.maxPositions && openPositions.length > 0) {
         const sorted = [...openPositions].sort((a, b) => (a.profits || 0) - (b.profits || 0));
-        await provider.closePosition(sorted[0]);
+        await provider.closePosition(sorted[0], undefined, 1, 'Closed to make space for next trade');
         openPositions.splice(openPositions.indexOf(sorted[0]), 1);
         positionCount--;
       }
@@ -149,6 +148,7 @@ export async function updateStrategy (provider: Provider, script: Script, settin
           await provider.order(pair, signal.direction, signal.limit, signal.stop, amount, signal.meta);
           positionCount++;
         } catch (e) {
+          Logger.log('Error while creating order');
           Logger.log(e.toString());
         }
       } else {
